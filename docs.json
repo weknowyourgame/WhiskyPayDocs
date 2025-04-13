@@ -76,12 +76,12 @@
       "anchors": [
         {
           "anchor": "GitHub",
-          "href": "https://github.com/whiskypaydocs",
+          "href": "https://github.com/weknowyourgame/WhiskyPay",
           "icon": "github"
         },
         {
           "anchor": "Support",
-          "href": "mailto:support@whiskypay.com",
+          "href": "mailto:support@whiskypeak.com",
           "icon": "envelope"
         }
       ]
@@ -95,18 +95,18 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@whiskypay.com"
+        "href": "mailto:support@whiskypeak.com"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://dashboard.whiskypay.com"
+      "href": "https://pay.whiskypeak.com"
     }
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/whiskypaydocs"
+      "github": "https://github.com/weknowyourgame/WhiskyPay"
     }
   }
 }
