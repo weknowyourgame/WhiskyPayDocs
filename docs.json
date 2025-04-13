@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "WhiskyPay Documentation",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#000000",
+    "light": "#000000",
+    "dark": "#000000"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -45,28 +45,6 @@
               "workers/introduction",
               "workers/setup",
               "workers/architecture"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API Reference",
-        "groups": [
-          {
-            "group": "SDK",
-            "pages": [
-              "api-reference/sdk/create-session",
-              "api-reference/sdk/fetch-session",
-              "api-reference/sdk/payment-modal",
-              "api-reference/sdk/verify-payment",
-              "api-reference/sdk/tokens"
-            ]
-          },
-          {
-            "group": "Payment Gateway",
-            "pages": [
-              "api-reference/gateway/session",
-              "api-reference/gateway/webhook"
             ]
           }
         ]
