@@ -1,0 +1,86 @@
+---
+title: 'Workers Overview'
+description: 'Introduction to WhiskyPay background workers'
+---
+
+# WhiskyPay Workers
+
+WhiskyPay Workers is a background job processing system that handles asynchronous tasks related to payment processing. Built with BullMQ and Redis, it ensures reliable execution of critical post-payment operations.
+
+## Purpose
+
+The Workers system serves two primary purposes:
+
+1. **Webhook Delivery**: Reliably notifying merchants about successful payments through webhook callbacks
+2. **Email Notifications**: Sending confirmation emails to both buyers and merchants
+
+By handling these operations asynchronously, the main payment flow remains fast and responsive, while ensuring that notifications are delivered reliably even in the case of temporary failures.
+
+## Key Features
+
+- **Queue-based Architecture**: Uses Redis and BullMQ for durable message queuing
+- **Automatic Retries**: Failed jobs are automatically retried with exponential backoff
+- **Error Handling**: Comprehensive error logging and notification
+- **Separate Queues**: Different queues for webhook callbacks and emails
+- **Scalable Design**: Can be scaled horizontally for high-volume processing
+
+## System Components
+
+### 1. Queue Management
+
+The worker system uses BullMQ, a Redis-based queue for Node.js, to manage job processing:
+
+- `callbackQueue`: For webhook notifications to merchants
+- `emailQueue`: For sending email confirmations
+
+### 2. Job Processors
+
+Each queue has a dedicated worker that processes jobs:
+
+- **Callback Worker**: Makes HTTP requests to merchant-defined endpoints
+- **Email Worker**: Sends formatted emails using nodemailer
+
+### 3. Infrastructure
+
+The system relies on:
+
+- **Redis**: For storing and managing job queues
+- **Node.js**: Runtime environment for job processing
+- **nodemailer**: For handling email delivery
+
+## Job Flow
+
+1. **Job Creation**: When a payment is successfully verified, the Payment Gateway adds jobs to the appropriate queues
+2. **Job Queuing**: Jobs are stored in Redis with metadata about the task
+3. **Worker Processing**: Background workers pick up jobs from their respective queues
+4. **Task Execution**: The worker executes the task (HTTP request or email sending)
+5. **Result Handling**: Success is logged, or the job is retried on failure
+
+## Benefits
+
+- **Reliability**: Ensures notifications are delivered even if the first attempt fails
+- **Scalability**: Handles any volume of notifications without impacting core payment processing
+- **Durability**: Jobs persist even if workers crash or restart
+- **Monitoring**: Provides insights into notification delivery and failures
+
+## Use Cases
+
+### Webhook Notifications
+
+- SaaS applications update user subscription status
+- E-commerce systems update order status
+- CRM systems track customer purchases
+- Analytics platforms record payment events
+
+### Email Notifications
+
+- Send purchase receipts to customers
+- Notify merchants of new sales
+- Send welcome emails for new subscriptions
+- Provide payment confirmations with details
+
+## Next Steps
+
+- [Learn how to set up Workers](/workers/setup)
+- [Understand the Workers architecture](/workers/architecture)
+- [View the complete system flow](/development) 

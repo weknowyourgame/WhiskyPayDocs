@@ -1,0 +1,138 @@
+---
+title: 'Installation'
+description: 'How to install and set up the WhiskyPay SDK'
+---
+
+# Installing the WhiskyPay SDK
+
+This guide will walk you through installing and setting up the WhiskyPay SDK in your React application.
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- Node.js 16 or higher installed
+- npm or yarn package manager
+- A React application (Next.js, Create React App, Vite, etc.)
+
+## Installation
+
+Install the WhiskyPay SDK using npm or yarn:
+
+```bash
+# Using npm
+npm install @whisky-peak/whisky-pay-sdk
+
+# Using yarn
+yarn add @whisky-peak/whisky-pay-sdk
+```
+
+## Dependencies
+
+The SDK has peer dependencies that you might need to install if they're not already in your project:
+
+```bash
+npm install @solana/web3.js @solana/wallet-adapter-react @solana/wallet-adapter-react-ui
+```
+
+## Basic Setup
+
+Once installed, you can import the SDK in your React components:
+
+```jsx
+// Import the necessary components and functions
+import { 
+  createSession, 
+  PaymentModal,
+  fetchSession,
+  verifyPayment,
+  Tokens
+} from '@whisky-peak/whisky-pay-sdk';
+```
+
+## Solana Wallet Adapter Setup
+
+For the best experience, we recommend setting up the Solana wallet adapter in your application. This allows customers to connect their Solana wallets for payment.
+
+Here's a basic setup for Next.js applications:
+
+```jsx
+// _app.jsx or _app.tsx
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { clusterApiUrl } from '@solana/web3.js';
+import { useMemo } from 'react';
+
+// Import Solana wallet adapter styles
+import '@solana/wallet-adapter-react-ui/styles.css';
+
+function MyApp({ Component, pageProps }) {
+  // Set up supported wallets
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+    ],
+    []
+  );
+  
+  // Set up Solana network (mainnet, testnet, or devnet)
+  const network = WalletAdapterNetwork.Mainnet;
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+
+  return (
+    <ConnectionProvider endpoint={endpoint}>
+      <WalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>
+          <Component {...pageProps} />
+        </WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
+  );
+}
+
+export default MyApp;
+```
+
+## Environment Setup
+
+If you plan to specify custom RPC URLs or API endpoints, you can set them up in your environment variables:
+
+```env
+# .env file
+NEXT_PUBLIC_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+NEXT_PUBLIC_WHISKYPAY_API_URL=https://api.whiskypay.com
+```
+
+Then use them in your application:
+
+```jsx
+const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL;
+const API_URL = process.env.NEXT_PUBLIC_WHISKYPAY_API_URL;
+
+// Create a session with custom API URL
+const sessionId = await createSession(
+  merchantId,
+  customerEmail,
+  planId,
+  API_URL
+);
+```
+
+## Troubleshooting
+
+If you encounter issues during installation:
+
+1. **Version conflicts**: Make sure your React version is compatible (React 18+ recommended)
+2. **Webpack errors**: Add the SDK to your transpilation process if using an older build system
+3. **TypeScript errors**: The SDK includes TypeScript definitions, but verify they're properly recognized by your IDE
+
+## Next Steps
+
+Now that you've installed the SDK, you can:
+
+- Learn how to [use the SDK](/sdk/usage)
+- Browse the [API reference](/sdk/api-reference)
+- Check out [examples](/payment-gateway/examples) 

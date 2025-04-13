@@ -1,0 +1,286 @@
+---
+title: 'SDK Usage Guide'
+description: 'How to use the WhiskyPay SDK components'
+---
+
+# Using the WhiskyPay SDK
+
+This guide covers the main use cases for the WhiskyPay SDK, with code examples to help you implement payment functionality in your SaaS application.
+
+## Creating a Payment Session
+
+The first step in accepting payments is to create a session. A session represents a payment intent and contains information about the customer, plan, and merchant.
+
+```jsx
+import { createSession } from '@whisky-peak/whisky-pay-sdk';
+
+async function createPaymentSession() {
+  try {
+    // Replace with your merchant ID from the WhiskyPay dashboard
+    const merchantId = 'your-merchant-id';
+    
+    // Customer details
+    const customerEmail = 'customer@example.com';
+    
+    // Product/plan details
+    const planId = 'premium-plan';
+    
+    // Create the session
+    const sessionId = await createSession(merchantId, customerEmail, planId);
+    
+    if (sessionId) {
+      console.log('Session created successfully:', sessionId);
+      return sessionId;
+    } else {
+      console.error('Failed to create session');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error creating session:', error);
+    return null;
+  }
+}
+```
+
+### Advanced Session Creation
+
+You can also specify a custom API URL and configure retry behavior:
+
+```jsx
+const sessionId = await createSession(
+  merchantId,
+  customerEmail,
+  planId,
+  'https://custom-api.example.com',  // Custom API URL
+  5                                 // Maximum retry attempts
+);
+```
+
+## Displaying the Payment Modal
+
+Once you have a session ID, you can display the payment modal to your customer:
+
+```jsx
+import { PaymentModal } from '@whisky-peak/whisky-pay-sdk';
+import { useState } from 'react';
+
+function CheckoutPage() {
+  const [sessionId, setSessionId] = useState(null);
+  
+  const handleCheckout = async () => {
+    const session = await createPaymentSession();
+    if (session) {
+      setSessionId(session);
+    }
+  };
+  
+  return (
+    <div>
+      {!sessionId ? (
+        <button onClick={handleCheckout}>
+          Pay with Crypto
+        </button>
+      ) : (
+        <PaymentModal
+          sessionId={sessionId}
+          RPC_URL="https://api.mainnet-beta.solana.com"
+          onRedirect={() => {
+            // Handle payment completion
+            window.location.href = '/thank-you';
+          }}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+### Payment Modal Props
+
+The `PaymentModal` component accepts these props:
+
+```jsx
+<PaymentModal
+  // Required props
+  sessionId="uuid-session-id"                  // Session ID from createSession
+  RPC_URL="https://api.mainnet-beta.solana.com" // Solana RPC URL
+  
+  // Optional props
+  onRedirect={() => {}}                      // Called when payment completes
+  onClose={() => {}}                        // Called when modal is closed
+  customStyles={{                           // Custom styling
+    backgroundColor: '#f5f5f5',
+    textColor: '#333',
+    primaryColor: '#16A34A'
+  }}
+  apiUrl="https://custom-api.example.com"    // Custom API URL
+  defaultToken="SOL"                        // Default selected token
+/>
+```
+
+## Fetching Session Details
+
+You can retrieve details about a session:
+
+```jsx
+import { fetchSession } from '@whisky-peak/whisky-pay-sdk';
+
+async function getSessionDetails(sessionId) {
+  try {
+    const sessionDetails = await fetchSession(sessionId);
+    
+    if (sessionDetails) {
+      console.log('Session details:', sessionDetails);
+      // Use the details as needed
+      return sessionDetails;
+    } else {
+      console.error('Failed to fetch session details');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching session:', error);
+    return null;
+  }
+}
+```
+
+The session details include information about the merchant, customer, plan, and pricing.
+
+## Verifying Payments
+
+You can verify that a payment transaction is valid:
+
+```jsx
+import { verifyPayment } from '@whisky-peak/whisky-pay-sdk';
+
+async function checkPayment(sessionId, transactionSignature, userPublicKey) {
+  try {
+    const isValid = await verifyPayment(
+      sessionId,
+      transactionSignature,
+      userPublicKey
+    );
+    
+    if (isValid) {
+      console.log('Payment is valid!');
+      // Update your database, grant access, etc.
+      return true;
+    } else {
+      console.error('Invalid payment');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error verifying payment:', error);
+    return false;
+  }
+}
+```
+
+## Working with Tokens
+
+The SDK includes a utility for working with supported tokens:
+
+```jsx
+import { Tokens } from '@whisky-peak/whisky-pay-sdk';
+
+// Get all supported tokens
+const allTokens = Tokens.getAll();
+console.log('Supported tokens:', allTokens);
+
+// Get a specific token by symbol
+const usdcToken = Tokens.getToken('USDC');
+console.log('USDC details:', usdcToken);
+
+// Check if a token is supported
+const isSupported = Tokens.isSupported('BONK');
+console.log('Is BONK supported?', isSupported);
+```
+
+## Complete Example
+
+Here's a complete checkout page example:
+
+```jsx
+import React, { useState } from 'react';
+import { createSession, PaymentModal } from '@whisky-peak/whisky-pay-sdk';
+
+function CheckoutPage() {
+  const [sessionId, setSessionId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  const handleCheckout = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const merchantId = 'your-merchant-id';
+      const customerEmail = 'customer@example.com'; 
+      const planId = 'premium-plan';
+      
+      const session = await createSession(merchantId, customerEmail, planId);
+      
+      if (session) {
+        setSessionId(session);
+      } else {
+        setError('Failed to create payment session');
+      }
+    } catch (error) {
+      console.error('Error creating session:', error);
+      setError('An error occurred while creating the payment session');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handlePaymentComplete = () => {
+    // Redirect to success page or update UI
+    window.location.href = '/thank-you';
+  };
+  
+  return (
+    <div className="checkout-container">
+      <h1>Complete Your Purchase</h1>
+      <p>Premium Plan - $49.99/month</p>
+      
+      {error && (
+        <div className="error-message">{error}</div>
+      )}
+      
+      {!sessionId ? (
+        <button 
+          onClick={handleCheckout} 
+          disabled={loading}
+          className="checkout-button"
+        >
+          {loading ? 'Creating Session...' : 'Pay with Crypto'}
+        </button>
+      ) : (
+        <PaymentModal
+          sessionId={sessionId}
+          RPC_URL="https://api.mainnet-beta.solana.com"
+          onRedirect={handlePaymentComplete}
+          onClose={() => setSessionId(null)}
+          defaultToken="USDC"
+        />
+      )}
+    </div>
+  );
+}
+
+export default CheckoutPage;
+```
+
+## Best Practices
+
+- **Error Handling**: Always implement proper error handling around SDK calls
+- **Session Management**: Create sessions only when necessary, as they have a limited lifetime
+- **RPC URLs**: Use reliable RPC providers for the best experience
+- **Webhooks**: Rely on webhook notifications for confirming payment status rather than client-side verification
+- **Testing**: Test the payment flow with small amounts before going to production
+
+## Next Steps
+
+- Learn about [payment verification in depth](/api-reference/sdk/verify-payment)
+- Understand the [SDK API Reference](/sdk/api-reference)
+- Explore [payment gateway examples](/payment-gateway/examples) 

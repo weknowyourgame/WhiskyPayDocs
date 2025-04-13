@@ -1,0 +1,92 @@
+---
+title: 'SDK Overview'
+description: 'Introduction to the WhiskyPay SDK'
+---
+
+# WhiskyPay SDK
+
+The WhiskyPay SDK is a React-based library that provides everything you need to integrate Solana-based cryptocurrency payments into your SaaS application. It handles the complex aspects of blockchain interactions while providing a clean, customizable UI for your customers.
+
+## Features
+
+- **Easy Integration**: Simple API for creating payment sessions and displaying payment UI
+- **Payment Modal**: Ready-to-use React component with a polished UI
+- **Multiple Token Support**: Accept payments in SOL, USDC, JUP, BONK, USDT, and more
+- **Token Swaps**: Integrated with Jupiter to allow customers to pay with any Solana token
+- **Session Management**: Create and manage payment sessions
+- **Transaction Verification**: Verify payment authenticity
+- **Automatic API Detection**: Works across different environments without manual configuration
+- **Error Handling**: Robust error handling and retry mechanisms
+- **Typescript Support**: Full type definitions for improved developer experience
+
+## Core Components
+
+The SDK consists of several key components:
+
+### 1. Payment Modal
+
+A React component that provides a complete payment UI for your customers. It handles wallet connection, token selection, payment processing, and confirmation.
+
+```jsx
+<PaymentModal 
+  sessionId="session-uuid" 
+  RPC_URL="https://api.mainnet-beta.solana.com" 
+  onRedirect={() => console.log('Payment complete')}
+/>
+```
+
+### 2. Session Management
+
+Functions to create and fetch payment sessions:
+
+```jsx
+// Create a new payment session
+const sessionId = await createSession(
+  "your-merchant-id",
+  "customer@example.com",
+  "premium-plan"
+);
+
+// Fetch session details
+const sessionDetails = await fetchSession(sessionId);
+```
+
+### 3. Payment Verification
+
+Verify payment transactions to ensure they're valid and match the expected amount:
+
+```jsx
+const isValid = await verifyPayment(
+  sessionId,
+  transactionSignature,
+  userPublicKey
+);
+```
+
+### 4. Token Support
+
+Utility for working with supported payment tokens:
+
+```jsx
+import { Tokens } from '@whisky-peak/whisky-pay-sdk';
+
+// Get all supported tokens
+const allTokens = Tokens.getAll();
+
+// Get a specific token
+const usdcToken = Tokens.getToken('USDC');
+```
+
+## Requirements
+
+- React 18+
+- Node.js 16+
+- Modern browser with Web3 support
+- Solana wallet (Phantom, Solflare, etc.)
+
+## Next Steps
+
+- [Installation Guide](/sdk/installation)
+- [Usage Guide](/sdk/usage)
+- [API Reference](/sdk/api-reference)
+- [Examples](/payment-gateway/examples) 

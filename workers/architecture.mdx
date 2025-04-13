@@ -1,0 +1,287 @@
+---
+title: 'Workers Architecture'
+description: 'In-depth explanation of WhiskyPay Workers architecture'
+---
+
+# WhiskyPay Workers Architecture
+
+This page provides a detailed technical explanation of how the WhiskyPay Workers system is designed and operates.
+
+## System Overview
+
+The WhiskyPay Workers system implements a distributed job processing architecture using a producer-consumer pattern. It consists of three main components:
+
+1. **Job Producers**: Services that create jobs (primarily the Payment Gateway)
+2. **Job Queues**: Redis-backed queues that store pending jobs
+3. **Job Consumers**: Worker processes that execute the jobs
+
+## Technology Stack
+
+The Workers system is built with:
+
+- **Node.js**: Runtime environment for JavaScript
+- **TypeScript**: Type-safe development
+- **BullMQ**: Modern Redis-based queue for Node.js
+- **IORedis**: Redis client for Node.js with robust features
+- **Nodemailer**: Email sending library for Node.js
+
+## Architectural Components
+
+### 1. Redis Queue Storage
+
+Redis serves as the central job storage mechanism:
+
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│ Job Producer│──────▶ Redis Queue │◀─────▶ Job Consumer│
+└─────────────┘      └─────────────┘      └─────────────┘
+```
+
+Redis stores several types of data:
+- Pending jobs waiting to be processed
+- Active jobs currently being processed
+- Completed jobs (temporarily, for tracking)
+- Failed jobs and their error information
+- Job progress and metadata
+
+### 2. Queue Structure
+
+The system uses two separate queues:
+
+```
+┌─────────────────┐
+│   Redis Server  │
+│                 │
+│  ┌───────────┐  │
+│  │callbackQueue│ │
+│  └───────────┘  │
+│                 │
+│  ┌───────────┐  │
+│  │ emailQueue │  │
+│  └───────────┘  │
+└─────────────────┘
+```
+
+Each queue is independent and can be scaled separately according to workload requirements.
+
+### 3. Worker Implementation
+
+The worker implementation follows this pattern:
+
+```typescript
+// Worker structure simplified for clarity
+const callbackWorker = new Worker(
+  "callbackQueue",
+  async (job) => {
+    // Extract job data
+    const { callBack, plan, price, email, time } = job.data;
+    
+    // Process the job (send webhook)
+    await fetch(callBack, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email, plan, price, status: "success", timestamp: time,
+      }),
+    });
+  },
+  { connection } // Redis connection
+);
+```
+
+### 4. Connection Management
+
+The workers establish a persistent connection to Redis with resilient error handling:
+
+```typescript
+// Connection setup with error handling
+const connection = new IORedis(redisUrl, {
+  maxRetriesPerRequest: null, // Required by BullMQ
+});
+
+connection.on('error', (err) => {
+  console.error('Redis connection error:', err);
+  // Detailed error handling logic
+});
+
+connection.on('connect', () => {
+  console.log('Successfully connected to Redis server');
+  // Start workers once connected
+  startWorkers();
+});
+```
+
+## Job Processing Flow
+
+### 1. Job Creation
+
+When a payment is successfully verified, the Payment Gateway creates jobs:
+
+```typescript
+// Pseudocode for job creation in the Payment Gateway
+async function handleSuccessfulPayment(session, transaction) {
+  // Create the callback job
+  await callbackQueue.add('webhook', {
+    callBack: session.call_back,
+    plan: session.plan,
+    price: session.price,
+    email: session.email,
+    time: new Date().toISOString()
+  }, { 
+    attempts: 5,
+    backoff: {
+      type: 'exponential',
+      delay: 5000
+    }
+  });
+  
+  // Create the email job
+  await emailQueue.add('notification', {
+    buyerEmail: session.email,
+    merchantEmail: session.merchantEmail,
+    plan: session.plan,
+    saasName: session.saas_name,
+    logoUrl: session.logo_url
+  }, {
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 10000
+    }
+  });
+}
+```
+
+### 2. Job Execution
+
+Workers process jobs from their queues:
+
+1. Job is retrieved from the queue
+2. Worker executes the job function
+3. On success, job is marked complete
+4. On failure, job is retried according to the configured retry strategy
+
+### 3. Error Handling
+
+The system implements sophisticated error handling:
+
+```typescript
+// Error handling for workers
+callbackWorker.on("failed", (job, err) => {
+  console.error(`🚨 Callback job ${job!.id} failed with error: ${err.message}`);
+  // Could add additional error reporting here
+  // e.g., Sentry, CloudWatch, etc.
+});
+```
+
+## Scaling Strategies
+
+The Workers system can be scaled in several ways:
+
+### 1. Vertical Scaling
+
+Increase resources (CPU/memory) for the worker processes.
+
+### 2. Horizontal Scaling
+
+Run multiple worker instances processing from the same queues:
+
+```
+┌─────────────┐
+│ Worker 1    │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐     ┌─────────────┐
+│ Redis Queue │◀────▶ Worker 2    │
+└─────────────┘     └─────────────┘
+       ▲
+       │
+┌─────────────┐
+│ Worker 3    │
+└─────────────┘
+```
+
+### 3. Concurrency Control
+
+Control how many jobs each worker processes concurrently:
+
+```typescript
+const callbackWorker = new Worker(
+  "callbackQueue",
+  async (job) => { /* job processing */ },
+  { 
+    connection,
+    concurrency: 10 // Process up to 10 jobs simultaneously
+  }
+);
+```
+
+## Monitoring and Observability
+
+The system provides several monitoring options:
+
+### 1. Basic Logging
+
+```typescript
+// Log for successful job processing
+console.log(`✅ Callback sent successfully for ${email} - Plan: ${plan}`);
+
+// Log for failed jobs
+console.error(`❌ Failed to send callback for ${email}:`, error);
+```
+
+### 2. Job Status Tracking
+
+The BullMQ API offers methods to track job status:
+
+```typescript
+// Check queue status
+const jobCounts = await callbackQueue.getJobCounts();
+console.log(`Active: ${jobCounts.active}, Waiting: ${jobCounts.waiting}, Delayed: ${jobCounts.delayed}, Failed: ${jobCounts.failed}`);
+
+// Get failed jobs
+const failedJobs = await callbackQueue.getFailed();
+```
+
+## Security Considerations
+
+The Workers system implements several security measures:
+
+1. **Authentication**: Redis connection with optional authentication
+2. **Environment Isolation**: Sensitive data in environment variables
+3. **Input Validation**: Validation of job data before processing
+4. **Error Isolation**: Failed jobs don't affect other jobs
+
+## Deployment Architecture
+
+In production, the recommended deployment architecture is:
+
+```
+┌─────────────────────────────────────────────────┐
+│                   Load Balancer                 │
+└───────────────────────┬─────────────────────────┘
+                        │
+           ┌────────────┴────────────┐
+           │                         │
+┌──────────▼─────────┐     ┌─────────▼──────────┐
+│   Payment Gateway  │     │   Payment Gateway  │
+│    Instance 1      │     │    Instance 2      │
+└──────────┬─────────┘     └─────────┬──────────┘
+           │                         │
+           └────────────┬────────────┘
+                        │
+                ┌───────▼───────┐
+                │  Redis Queue  │
+                └───────┬───────┘
+                        │
+         ┌──────────────┼──────────────┐
+         │              │              │
+┌────────▼─────┐ ┌──────▼───────┐ ┌────▼────────┐
+│ Email Worker │ │Callback Worker│ │Webhook Worker│
+└──────────────┘ └──────────────┘ └──────────────┘
+```
+
+## Conclusion
+
+The WhiskyPay Workers system provides a robust, scalable solution for handling asynchronous tasks related to payment processing. By separating these tasks from the main payment flow, it improves reliability and user experience while ensuring all notifications are delivered properly. 

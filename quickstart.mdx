@@ -1,97 +1,147 @@
 ---
-title: 'Quickstart'
-description: 'Start building awesome documentation in under 5 minutes'
+title: 'Quickstart Guide'
+description: 'Get started with WhiskyPay in minutes'
 ---
 
-## Setup your development
+# WhiskyPay Quickstart
 
-Learn how to update your docs locally and deploy them to the public.
+This guide will help you quickly integrate WhiskyPay into your SaaS application to start accepting cryptocurrency payments on Solana.
 
-### Edit and preview
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="github" title="Clone your docs locally">
-    During the onboarding process, we created a repository on your Github with
-    your docs content. You can find this repository on our
-    [dashboard](https://dashboard.mintlify.com). To clone the repository
-    locally, follow these
-    [instructions](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
-    in your terminal.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Preview changes">
-    Previewing helps you make sure your changes look as intended. We built a
-    command line interface to render these changes locally. 
-    1. Install the
-    [Mintlify CLI](https://www.npmjs.com/package/mintlify) to preview the
-    documentation changes locally with this command: ``` npm i -g mintlify ```
-    2. Run the following command at the root of your documentation (where
-    `docs.json` is): ``` mintlify dev ```
-    <Note>
-      If you’re currently using the legacy ```mint.json``` configuration file, please update the Mintlify CLI:
+- A React application (Next.js, Create React App, Vite, etc.)
+- Node.js 16+ installed
+- npm or yarn package manager
+- Solana wallet adapter installed in your application (recommended)
 
+## Step 1: Installation
 
-      ```npm i -g mintlify@latest```
-      And run the new upgrade command in your docs repository:
+Install the WhiskyPay SDK package:
 
-      ```mintlify upgrade```
-      You should now be using the new ```docs.json``` configuration file. Feel free to delete the ```mint.json``` file from your repository.
-    </Note>
-  </Accordion>
-</AccordionGroup>
+```bash
+npm install @whisky-peak/whisky-pay-sdk
+# or
+yarn add @whisky-peak/whisky-pay-sdk
+```
 
-### Deploy your changes
+## Step 2: Register as a Merchant
 
-<AccordionGroup>
+Before you can accept payments, you need to register as a merchant:
 
-<Accordion icon="message-bot" title="Install our Github app">
-  Our Github app automatically deploys your changes to your docs site, so you
-  don't need to manage deployments yourself. You can find the link to install on
-  your [dashboard](https://dashboard.mintlify.com). Once the bot has been
-  successfully installed, there should be a check mark next to the commit hash
-  of the repo.
-</Accordion>
-<Accordion icon="rocket" title="Push your changes">
-  [Commit and push your changes to
-  Git](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository#about-git-push)
-  for your changes to update in your docs site. If you push and don't see that
-  the Github app successfully deployed your changes, you can also manually
-  update your docs through our [dashboard](https://dashboard.mintlify.com).
-</Accordion>
+1. Visit [dashboard.whiskypay.com](https://dashboard.whiskypay.com) and sign up for an account
+2. Connect your Solana wallet (This will be your payment receiving address)
+3. Fill in your SaaS details (name, logo, callback URL)
+4. You will receive a `saasId` to use in your integration
 
-</AccordionGroup>
+## Step 3: Create a Payment Page
 
-## Update your docs
+Create a simple payment page in your application:
 
-Add content directly in your files with MDX syntax and React components. You can use any of our components, or even build your own.
+```jsx
+import React, { useState } from 'react';
+import { createSession, PaymentModal } from '@whisky-peak/whisky-pay-sdk';
 
-<CardGroup>
+function CheckoutPage() {
+  const [sessionId, setSessionId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  
+  const handleCheckout = async () => {
+    setLoading(true);
+    
+    try {
+      // Replace with your actual merchant ID from the dashboard
+      const merchantId = 'your-saas-id-from-dashboard';
+      
+      // Create a payment session
+      const session = await createSession(
+        merchantId,
+        'customer@example.com', // Customer's email
+        'premium-plan'          // Plan identifier
+      );
+      
+      if (session) {
+        setSessionId(session);
+      } else {
+        alert('Failed to create payment session');
+      }
+    } catch (error) {
+      console.error('Error creating session:', error);
+      alert('An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // When payment is complete, redirect to a thank you page
+  const handlePaymentComplete = () => {
+    window.location.href = '/thank-you';
+  };
+  
+  return (
+    <div>
+      {!sessionId ? (
+        <button 
+          onClick={handleCheckout} 
+          disabled={loading}
+        >
+          {loading ? 'Creating session...' : 'Pay with Crypto'}
+        </button>
+      ) : (
+        <PaymentModal
+          sessionId={sessionId}
+          RPC_URL="https://api.mainnet-beta.solana.com"
+          onRedirect={handlePaymentComplete}
+        />
+      )}
+    </div>
+  );
+}
 
-<Card title="Add Content With MDX" icon="file" href="/essentials/markdown">
-  Add content to your docs with MDX syntax.
-</Card>
+export default CheckoutPage;
+```
 
-<Card
-  title="Add Code Blocks"
-  icon="square-code"
-  href="/essentials/code"
->
-  Add code directly to your docs with syntax highlighting.
-</Card>
+## Step 4: Handle Payment Notifications
 
-<Card
-  title="Add Images"
-  icon="image"
-  href="/essentials/images"
->
-  Add images to your docs to make them more engaging.
-</Card>
+When a payment is completed, WhiskyPay will:
 
-<Card
-  title="Add Custom Components"
-  icon="puzzle-piece"
-  href="/essentials/reusable-snippets"
->
-  Add templates to your docs to make them more reusable.
-</Card>
+1. Call your webhook URL (specified in your merchant dashboard)
+2. Send email confirmations to both you and your customer
+3. Redirect the customer to your specified redirect URL
 
-</CardGroup>
+Create a webhook endpoint to receive payment notifications:
+
+```javascript
+// Example webhook handler (Next.js API route)
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).end();
+  }
+  
+  const { email, plan, price, status, timestamp } = req.body;
+  
+  // Validate the webhook signature (recommended)
+  // Implementation depends on your server setup
+  
+  // Update your database to mark the subscription as active
+  await activateUserSubscription(email, plan);
+  
+  // Return a 200 status to acknowledge receipt
+  res.status(200).json({ success: true });
+}
+```
+
+## Step 5: Testing
+
+To test your integration:
+
+1. Use a real Solana wallet with testnet or devnet SOL
+2. Set `RPC_URL` to a testnet or devnet endpoint during testing
+3. Verify webhook calls are received correctly
+4. Test the payment flow end to end
+
+## Next Steps
+
+- [Explore the SDK in depth](/sdk/introduction)
+- [Learn about payment verification](/api-reference/sdk/verify-payment)
+- [Customize the payment UI](/sdk/api-reference#payment-modal-props)
+- [Set up workers for advanced notification handling](/workers/introduction)

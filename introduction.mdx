@@ -1,71 +1,42 @@
 ---
-title: Introduction
-description: "Welcome to the home of your new documentation"
+title: 'Welcome to WhiskyPay'
+description: 'A comprehensive Solana-based payment solution for SaaS businesses'
 ---
 
-<img
-  className="block dark:hidden"
-  src="/images/hero-light.png"
-  alt="Hero Light"
-/>
-<img
-  className="hidden dark:block"
-  src="/images/hero-dark.png"
-  alt="Hero Dark"
-/>
+# Welcome to WhiskyPay
 
-## Setting up
+WhiskyPay is a complete payment solution built on the Solana blockchain, designed specifically for SaaS businesses looking to accept cryptocurrency payments. Our platform provides a seamless integration experience with robust tools to handle the entire payment lifecycle.
 
-The first step to world-class documentation is setting up your editing environments.
+## Key Components
 
-<CardGroup cols={2}>
-  <Card
-    title="Edit Your Docs"
-    icon="pen-to-square"
-    href="https://mintlify.com/docs/quickstart"
-  >
-    Get your docs set up locally for easy development
-  </Card>
-  <Card
-    title="Preview Changes"
-    icon="image"
-    href="https://mintlify.com/docs/development"
-  >
-    Preview your changes before you push to make sure they're perfect
-  </Card>
-</CardGroup>
+WhiskyPay consists of three main components:
 
-## Make it yours
+### 1. SDK
 
-Update your docs to your brand and add valuable content for the best user conversion.
+Our React SDK allows developers to easily integrate WhiskyPay into their applications. It provides components and functions for creating payment sessions, displaying payment modals, and verifying transactions.
 
-<CardGroup cols={2}>
-  <Card
-    title="Customize Style"
-    icon="palette"
-    href="https://mintlify.com/docs/settings/global"
-  >
-    Customize your docs to your company's colors and brands
-  </Card>
-  <Card
-    title="Reference APIs"
-    icon="code"
-    href="https://mintlify.com/docs/api-playground/openapi"
-  >
-    Automatically generate endpoints from an OpenAPI spec
-  </Card>
-  <Card
-    title="Add Components"
-    icon="screwdriver-wrench"
-    href="https://mintlify.com/docs/content/components/accordions"
-  >
-    Build interactive features and designs to guide your users
-  </Card>
-  <Card
-    title="Get Inspiration"
-    icon="stars"
-    href="https://mintlify.com/customers"
-  >
-    Check out our showcase of our favorite documentation
-  </Card>
-</CardGroup>
+### 2. Payment Gateway
+
+The payment gateway handles all the backend logic for payment processing, including session management, transaction validation, and database operations. It's built with Next.js and integrates with Supabase for data storage.
+
+### 3. Workers
+
+Background workers handle asynchronous tasks such as sending webhook notifications to merchants and delivering email confirmations to buyers and merchants after successful payments.
+
+## Key Features
+
+- **Multiple Token Support**: Accept payments in SOL, USDC, JUP, BONK, USDT and more
+- **Token Swaps**: Integrated with Jupiter to allow customers to pay with any Solana token
+- **Customizable UI**: Beautiful and customizable payment modal that integrates with any application
+- **Webhook Notifications**: Receive real-time updates when payments are completed
+- **Email Notifications**: Automatic email confirmations for both merchants and customers
+- **Session-based Flow**: Secure, stateful payment sessions to ensure reliable processing
+- **Transaction Verification**: Built-in tools to verify payment authenticity
+
+## Getting Started
+
+To get started with WhiskyPay, check out our [Quickstart Guide](/quickstart) or explore the specific documentation for each component:
+
+- [SDK Documentation](/sdk/introduction)
+- [Payment Gateway Documentation](/payment-gateway/introduction)
+- [Workers Documentation](/workers/introduction)

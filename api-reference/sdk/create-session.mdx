@@ -1,0 +1,129 @@
+---
+title: 'createSession'
+description: 'API reference for the createSession function'
+---
+
+# createSession
+
+The `createSession` function creates a payment session for a customer, establishing the details needed for the transaction.
+
+## Syntax
+
+```typescript
+function createSession(
+  saasId: string, 
+  email: string, 
+  plan: string,
+  apiUrl?: string,
+  maxRetries: number = 3
+): Promise<string | null>
+```
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `saasId` | string | Yes | Your merchant ID from the WhiskyPay dashboard |
+| `email` | string | Yes | Customer's email address |
+| `plan` | string | Yes | Identifier for the subscription plan |
+| `apiUrl` | string | No | Custom API URL (defaults to auto-detection from window.location) |
+| `maxRetries` | number | No | Maximum number of retry attempts (default: 3) |
+
+## Return Value
+
+Returns a Promise that resolves to:
+- A string containing the session ID when successful
+- `null` when session creation fails
+
+## Description
+
+The `createSession` function handles creating a payment session with the WhiskyPay API. This is the first step in the payment process.
+
+Under the hood, it:
+1. Validates inputs (merchant ID, email format, plan)
+2. Determines the appropriate API URL (auto-detected or specified)
+3. Sanitizes inputs to prevent injection attacks
+4. Makes API requests with retry logic for reliability
+5. Handles timeouts and various error conditions
+
+## Examples
+
+### Basic Usage
+
+```jsx
+import { createSession } from '@whisky-peak/whisky-pay-sdk';
+
+// Create a payment session
+async function initiatePayment() {
+  try {
+    const sessionId = await createSession(
+      'your-merchant-id', 
+      'customer@example.com',
+      'premium-plan'
+    );
+    
+    if (sessionId) {
+      console.log('Session created:', sessionId);
+      // Proceed to payment UI
+    } else {
+      console.error('Failed to create session');
+    }
+  } catch (error) {
+    console.error('Error creating session:', error);
+  }
+}
+```
+
+### With Custom API URL
+
+```jsx
+// Using a custom API endpoint
+const sessionId = await createSession(
+  'your-merchant-id',
+  'customer@example.com',
+  'premium-plan',
+  'https://custom-api.example.com'
+);
+```
+
+### With Custom Retry Configuration
+
+```jsx
+// Increase retry attempts for unreliable networks
+const sessionId = await createSession(
+  'your-merchant-id',
+  'customer@example.com',
+  'premium-plan',
+  undefined,  // Use default API URL detection
+  5           // Maximum of 5 retry attempts
+);
+```
+
+## Error Handling
+
+The function may throw errors for various reasons:
+
+```jsx
+try {
+  const sessionId = await createSession(merchantId, email, plan);
+  // Process session
+} catch (error) {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    console.error('Session creation timed out - server may be busy');
+  } else {
+    console.error('Failed to create session:', error.message);
+  }
+}
+```
+
+## Notes
+
+- Email validation is performed automatically; invalid emails will cause the function to return `null`
+- The API URL is auto-detected from the current window location if not provided
+- Retry logic uses exponential backoff with jitter to prevent overwhelming the server
+- Timeout is set to 15 seconds for API requests
+
+## See Also
+
+- [PaymentModal](/api-reference/sdk/payment-modal) - Display the payment UI once you have a session
+- [fetchSession](/api-reference/sdk/fetch-session) - Retrieve details about an existing session 

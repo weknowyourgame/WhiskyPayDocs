@@ -1,0 +1,226 @@
+---
+title: 'SDK API Reference'
+description: 'Comprehensive API documentation for the WhiskyPay SDK'
+---
+
+# WhiskyPay SDK API Reference
+
+This page documents all the components, functions, and types exported by the WhiskyPay SDK.
+
+## Core Functions
+
+### createSession
+
+Creates a payment session for a customer.
+
+```typescript
+function createSession(
+  saasId: string,
+  email: string,
+  plan: string,
+  apiUrl?: string,
+  maxRetries?: number
+): Promise<string | null>;
+```
+
+**Parameters:**
+- `saasId` (string) - Your merchant ID from the WhiskyPay dashboard
+- `email` (string) - Customer's email address
+- `plan` (string) - Identifier for the subscription plan
+- `apiUrl` (string, optional) - Custom API URL
+- `maxRetries` (number, optional) - Maximum number of retry attempts (default: 3)
+
+**Returns:**
+- Promise that resolves to the session ID (string) or null if creation failed
+
+**Example:**
+```javascript
+const sessionId = await createSession('merchant-id', 'customer@example.com', 'premium-plan');
+```
+
+### fetchSession
+
+Retrieves information about an existing session.
+
+```typescript
+function fetchSession(
+  sessionId: string,
+  apiUrl?: string
+): Promise<SessionDetails | null>;
+```
+
+**Parameters:**
+- `sessionId` (string) - ID of the session to fetch
+- `apiUrl` (string, optional) - Custom API URL
+
+**Returns:**
+- Promise that resolves to a SessionDetails object or null if fetch failed
+
+**Example:**
+```javascript
+const sessionDetails = await fetchSession('session-id');
+```
+
+### verifyPayment
+
+Verifies that a payment transaction is valid.
+
+```typescript
+function verifyPayment(
+  sessionId: string,
+  signature: string,
+  publicKey: string,
+  apiUrl?: string
+): Promise<boolean>;
+```
+
+**Parameters:**
+- `sessionId` (string) - ID of the payment session
+- `signature` (string) - Transaction signature from Solana
+- `publicKey` (string) - Customer's wallet public key
+- `apiUrl` (string, optional) - Custom API URL
+
+**Returns:**
+- Promise that resolves to a boolean indicating if the payment is valid
+
+**Example:**
+```javascript
+const isValid = await verifyPayment('session-id', 'tx-signature', 'wallet-pubkey');
+```
+
+## Components
+
+### PaymentModal
+
+A React component that displays a payment interface for customers.
+
+```typescript
+interface PaymentModalProps {
+  sessionId: string;
+  RPC_URL: string;
+  onRedirect?: () => void;
+  onClose?: () => void;
+  customStyles?: {
+    backgroundColor?: string;
+    textColor?: string;
+    primaryColor?: string;
+  };
+  apiUrl?: string;
+  defaultToken?: string;
+}
+
+function PaymentModal(props: PaymentModalProps): JSX.Element;
+```
+
+**Props:**
+- `sessionId` (string, required) - Payment session ID
+- `RPC_URL` (string, required) - Solana RPC URL for blockchain communication
+- `onRedirect` (function, optional) - Callback for when payment completes
+- `onClose` (function, optional) - Callback for when modal is closed
+- `customStyles` (object, optional) - Custom styling options
+- `apiUrl` (string, optional) - Custom API URL
+- `defaultToken` (string, optional) - Default selected token (e.g., "SOL", "USDC")
+
+**Example:**
+```jsx
+<PaymentModal
+  sessionId="session-id"
+  RPC_URL="https://api.mainnet-beta.solana.com"
+  onRedirect={() => window.location.href = '/success'}
+/>
+```
+
+### PaymentModalComponent
+
+A lower-level component for custom payment modal implementations.
+
+```typescript
+interface PaymentModalComponentProps {
+  // Similar to PaymentModal, but with more customization options
+  // See full documentation for details
+}
+
+function PaymentModalComponent(props: PaymentModalComponentProps): JSX.Element;
+```
+
+## Utilities
+
+### Tokens
+
+A utility for working with supported tokens.
+
+```typescript
+interface Token {
+  symbol: string;
+  name: string;
+  decimals: number;
+  mintAddress: string;
+  logoURI: string;
+}
+
+namespace Tokens {
+  function getAll(): Token[];
+  function getToken(symbol: string): Token | undefined;
+  function isSupported(symbol: string): boolean;
+}
+```
+
+**Methods:**
+- `getAll()` - Returns all supported tokens
+- `getToken(symbol)` - Returns a token by its symbol
+- `isSupported(symbol)` - Checks if a token is supported
+
+**Example:**
+```javascript
+const allTokens = Tokens.getAll();
+const usdcToken = Tokens.getToken('USDC');
+const isSupported = Tokens.isSupported('BONK');
+```
+
+## Types
+
+### SessionDetails
+
+Represents the details of a payment session.
+
+```typescript
+interface SessionDetails {
+  id: string;
+  saasId: string;
+  saasName: string;
+  email: string;
+  plan: string;
+  price: number;
+  address: string;
+  logoUrl: string;
+  time: string;
+  expired?: boolean;
+}
+```
+
+## Error Handling
+
+The SDK functions throw errors for various conditions. It's recommended to wrap SDK calls in try/catch blocks to handle these errors gracefully.
+
+```javascript
+try {
+  const sessionId = await createSession(merchantId, email, plan);
+  // Process session
+} catch (error) {
+  console.error('Error creating session:', error);
+  // Handle error appropriately
+}
+```
+
+## Browser Compatibility
+
+The SDK is designed to work in modern browsers that support ES6+ features and Web3 capabilities. It has been tested on:
+
+- Chrome 88+
+- Firefox 85+
+- Safari 14+
+- Edge 88+
+
+## Advanced Usage
+
+For advanced use cases, such as custom API integrations or non-React environments, see the [Advanced SDK Guide](/api-reference/sdk/advanced) for more details. 

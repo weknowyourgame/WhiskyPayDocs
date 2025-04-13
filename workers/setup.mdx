@@ -1,0 +1,237 @@
+---
+title: 'Workers Setup'
+description: 'How to set up and configure the WhiskyPay Workers system'
+---
+
+# Setting Up WhiskyPay Workers
+
+This guide will walk you through the process of setting up and configuring the WhiskyPay Workers system for processing background jobs.
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- Node.js (v16 or higher)
+- Redis server (v6 or higher)
+- A dedicated server/VM or container for running workers
+- Email service credentials (if using email notifications)
+
+## Installation
+
+### 1. Clone the Repository
+
+```bash
+# Clone the repository
+git clone https://github.com/whiskypay/payment-workers.git
+cd payment-workers
+```
+
+### 2. Install Dependencies
+
+```bash
+# Install required packages
+npm install
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+# Redis connection (required)
+REDIS_URL=redis://127.0.0.1:6379
+
+# Email configuration (required for email worker)
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-email-app-password
+```
+
+Notes:
+- For Gmail, you'll need to use an "app password" if you have 2FA enabled
+- If your Redis server requires authentication, use: `redis://username:password@hostname:port`
+
+## Redis Setup
+
+### Local Development
+
+For local development, you can install Redis using:
+
+#### macOS
+```bash
+brew install redis
+brew services start redis
+```
+
+#### Linux
+```bash
+sudo apt install redis-server
+sudo systemctl start redis
+```
+
+#### Windows
+Download and install from [Redis for Windows](https://github.com/microsoftarchive/redis/releases)
+
+#### Docker
+```bash
+docker run -p 6379:6379 redis
+```
+
+### Production Environment
+
+For production, it's recommended to:
+
+1. Use a managed Redis service like Redis Labs, AWS ElastiCache, or Azure Cache for Redis
+2. Enable persistence to prevent job loss during restarts
+3. Configure proper authentication
+4. Set up monitoring
+
+Update your `.env` file with the production Redis URL:
+
+```env
+REDIS_URL=redis://username:password@your-redis-host:6379
+```
+
+## Email Configuration
+
+The email worker uses nodemailer with Gmail as the default provider. For production use:
+
+1. Create a dedicated email account for sending notifications
+2. Enable "Less secure app access" or create an app password
+3. Update the `.env` file with the credentials
+
+For non-Gmail providers, modify the `transporter` configuration in `index.ts`:
+
+```typescript
+const transporter = nodemailer.createTransport({
+  host: 'smtp.yourprovider.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+```
+
+## Running the Workers
+
+### Development Mode
+
+For development and testing:
+
+```bash
+# Start workers in development mode
+npm run dev
+```
+
+### Production Mode
+
+For production deployment:
+
+```bash
+# Build the TypeScript code
+npm run build
+
+# Start workers in production mode
+npm start
+```
+
+## Process Management
+
+For production deployments, use a process manager to ensure the workers stay running:
+
+### PM2
+
+```bash
+# Install PM2
+npm install -g pm2
+
+# Start with PM2
+pm2 start dist/index.js --name "whiskypay-workers"
+
+# Ensure it starts on system reboot
+pm2 startup
+pm2 save
+```
+
+### Docker
+
+A sample Dockerfile is provided:
+
+```dockerfile
+FROM node:16-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY dist ./dist
+
+CMD ["node", "dist/index.js"]
+```
+
+Build and run the container:
+
+```bash
+docker build -t whiskypay-workers .
+docker run -d --name workers --env-file .env whiskypay-workers
+```
+
+## Monitoring
+
+### Basic Monitoring
+
+Check the worker logs for errors and job processing:
+
+```bash
+# If using PM2
+pm2 logs whiskypay-workers
+
+# If using Docker
+docker logs -f workers
+```
+
+### Advanced Monitoring
+
+For production environments, consider setting up:
+
+1. Log aggregation (ELK Stack, Graylog, etc.)
+2. Redis monitoring tools
+3. Worker health checks
+4. Alerting for failed jobs
+
+## Troubleshooting
+
+### Redis Connection Issues
+
+If you see "Redis connection error" messages:
+
+- Verify Redis is running: `redis-cli ping` should return `PONG`
+- Check connectivity: `telnet your-redis-host 6379`
+- Verify credentials if using authentication
+- Check network/firewall settings
+
+### Email Sending Issues
+
+If emails aren't being sent:
+
+- Verify SMTP credentials
+- Check for rate limiting by the email provider
+- Ensure the email service is available
+- Check logs for specific error messages
+
+### Job Processing Issues
+
+If jobs aren't being processed:
+
+- Check that Redis has enough memory allocated
+- Verify job data format is correct
+- Look for errors in the worker logs
+- Ensure the worker process is running
+
+## Next Steps
+
+- [Understand the Workers architecture](/workers/architecture)
+- [View the complete system flow](/development)
+- [Configure custom email templates](/workers/customization) 

@@ -1,107 +1,271 @@
 ---
-title: 'Development'
-description: 'Preview changes locally to update your docs'
+title: 'Development Guide'
+description: 'Technical guide for WhiskyPay platform development'
 ---
 
-<Info>
-  **Prerequisite**: Please install Node.js (version 19 or higher) before proceeding. <br />
-  Please upgrade to ```docs.json``` before proceeding and delete the legacy ```mint.json``` file.
-</Info>
+# WhiskyPay Development Guide
 
-Follow these steps to install and run Mintlify on your operating system:
+This guide provides comprehensive information for developers working on the WhiskyPay platform. It covers environment setup, development workflows, and system architecture.
 
-**Step 1**: Install Mintlify:
+## System Architecture
 
-<CodeGroup>
+WhiskyPay consists of three main components that work together:
 
-  ```bash npm
-  npm i -g mintlify
-  ```
-
-```bash yarn
-yarn global add mintlify
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│    React App    │     │  Payment Gateway │     │     Workers     │
+│                 │────▶│  (Next.js API)   │────▶│   (BullMQ)      │
+│  SDK            │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+        │                       │                       │
+        │                       │                       │
+        ▼                       ▼                       ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Solana Wallet  │     │    Supabase     │     │      Redis      │
+│                 │     │    Database     │     │     Queue       │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
-</CodeGroup>
+1. **SDK**: React components and utility functions for merchants to integrate
+2. **Payment Gateway**: Backend API and database for processing payments
+3. **Workers**: Background processing for webhooks and emails
 
-**Step 2**: Navigate to the docs directory (where the `docs.json` file is located) and execute the following command:
+## Development Environment Setup
+
+### Prerequisites
+
+- Node.js v16+
+- npm or yarn
+- Git
+- Redis (for local development)
+- Supabase account (or local Supabase setup)
+- Solana CLI tools (optional but recommended)
+
+### Clone Repositories
 
 ```bash
-mintlify dev
+# Clone all three repositories
+git clone https://github.com/whiskypay/whisky-pay-sdk.git sdk
+git clone https://github.com/whiskypay/payment-gateway.git payment-gateway
+git clone https://github.com/whiskypay/payment-workers.git workers
 ```
 
-A local preview of your documentation will be available at `http://localhost:3000`.
-
-### Custom Ports
-
-By default, Mintlify uses port 3000. You can customize the port Mintlify runs on by using the `--port` flag. To run Mintlify on port 3333, for instance, use this command:
+### SDK Setup
 
 ```bash
-mintlify dev --port 3333
+cd sdk
+npm install
+npm run build
 ```
 
-If you attempt to run Mintlify on a port that's already in use, it will use the next available port:
-
-```md
-Port 3000 is already in use. Trying 3001 instead.
-```
-
-## Mintlify Versions
-
-Please note that each CLI release is associated with a specific version of Mintlify. If your local website doesn't align with the production version, please update the CLI:
-
-<CodeGroup>
-
-```bash npm
-npm i -g mintlify@latest
-```
-
-```bash yarn
-yarn global upgrade mintlify
-```
-
-</CodeGroup>
-
-## Validating Links
-
-The CLI can assist with validating reference links made in your documentation. To identify any broken links, use the following command:
+To develop the SDK with local linking:
 
 ```bash
-mintlify broken-links
+# In the SDK directory
+npm link
+
+# In your test application
+npm link @whisky-peak/whisky-pay-sdk
 ```
 
-## Deployment
+### Payment Gateway Setup
 
-<Tip>
-  Unlimited editors available under the [Pro
-  Plan](https://mintlify.com/pricing) and above.
-</Tip>
+```bash
+cd payment-gateway
+npm install
 
-If the deployment is successful, you should see the following:
+# Create .env file with Supabase credentials
+cp .env.example .env
+# Edit .env with your actual credentials
 
-<Frame>
-  <img src="/images/checks-passed.png" style={{ borderRadius: '0.5rem' }} />
-</Frame>
+# Start development server
+npm run dev
+```
 
-## Code Formatting
+### Workers Setup
 
-We suggest using extensions on your IDE to recognize and format MDX. If you're a VSCode user, consider the [MDX VSCode extension](https://marketplace.visualstudio.com/items?itemName=unifiedjs.vscode-mdx) for syntax highlighting, and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for code formatting.
+```bash
+cd workers
+npm install
 
-## Troubleshooting
+# Create .env file with Redis credentials
+cp .env.example .env
+# Edit .env with your actual credentials
 
-<AccordionGroup>
-  <Accordion title='Error: Could not load the "sharp" module using the darwin-arm64 runtime'>
+# Start workers in development mode
+npm run dev
+```
 
-    This may be due to an outdated version of node. Try the following:
-    1. Remove the currently-installed version of mintlify: `npm remove -g mintlify`
-    2. Upgrade to Node v19 or higher.
-    3. Reinstall mintlify: `npm install -g mintlify`
-  </Accordion>
+## Local Development Workflow
 
-  <Accordion title="Issue: Encountering an unknown error">
-  
-    Solution: Go to the root of your device and delete the \~/.mintlify folder. Afterwards, run `mintlify dev` again.
-  </Accordion>
-</AccordionGroup>
+For a complete local development environment, run all three components:
 
-Curious about what changed in the CLI version? [Check out the CLI changelog.](https://www.npmjs.com/package/mintlify?activeTab=versions)
+1. Start the Payment Gateway: `cd payment-gateway && npm run dev`
+2. Start the Workers: `cd workers && npm run dev`
+3. Start your test application that uses the SDK
+
+### Testing the End-to-End Flow
+
+1. Create a test merchant in your local database
+2. Use the SDK in a test app to create a payment session
+3. Complete a payment using a Solana wallet (Phantom in dev mode)
+4. Verify webhook callbacks and email notifications
+
+## Project Structure
+
+### SDK Structure
+
+```
+sdk/
+├── src/
+│   ├── index.ts             # Main exports
+│   ├── PaymentModal.tsx     # Payment UI component
+│   ├── createSession.ts     # Create payment session
+│   ├── fetchSession.ts      # Fetch session details
+│   ├── verifyPayment.tsx    # Verify payment transactions
+│   └── Tokens.ts            # Token definitions
+├── dist/                    # Compiled code
+├── package.json
+└── tsconfig.json
+```
+
+### Payment Gateway Structure
+
+```
+payment-gateway/
+├── app/                     # Next.js app directory
+│   ├── api/                 # API routes
+│   │   ├── session/         # Session API
+│   │   ├── verify/          # Verification API
+│   │   └── webhook/         # Webhook API
+│   ├── components/          # React components
+│   ├── lib/                 # Utility functions
+│   ├── models/              # Database models
+│   └── page.tsx             # Main landing page
+├── .env                     # Environment variables
+├── middleware.ts            # Next.js middleware
+└── package.json
+```
+
+### Workers Structure
+
+```
+workers/
+├── index.ts                 # Main worker file
+├── .env                     # Environment variables
+└── package.json
+```
+
+## Data Flow
+
+### Payment Process Flow
+
+1. **Session Creation**:
+   - Merchant creates a session via SDK
+   - Gateway generates a session ID and stores details in Supabase
+   - Session details returned to frontend
+
+2. **Payment Execution**:
+   - Customer connects their wallet via the PaymentModal component
+   - SDK fetches session details from the Gateway
+   - Customer selects token and makes payment
+   - Transaction is submitted to Solana blockchain
+
+3. **Payment Verification**:
+   - SDK sends transaction signature to Gateway for verification
+   - Gateway verifies the transaction on Solana
+   - On success, Gateway updates the database and queues jobs
+
+4. **Notifications**:
+   - Workers process webhook notification to merchant
+   - Workers send confirmation emails
+
+## Deployment Guidelines
+
+### SDK Deployment
+
+```bash
+# Build the package
+npm run build
+
+# Update version in package.json
+npm version patch
+
+# Publish to npm
+npm publish
+```
+
+### Payment Gateway Deployment
+
+The Payment Gateway is a Next.js application that can be deployed to Vercel, Netlify, or any Node.js hosting:
+
+```bash
+# Build for production
+npm run build
+
+# For Vercel
+vercel deploy
+
+# For custom hosting
+npm start
+```
+
+### Workers Deployment
+
+Workers should be deployed as a separate service:
+
+```bash
+# Build for production
+npm run build
+
+# Start in production mode
+npm start
+```
+
+For production, use PM2 or Docker as described in the [Workers Setup](/workers/setup) guide.
+
+## Debugging Tips
+
+### SDK Debugging
+
+- Set `localStorage.debug = 'whiskypay:*'` in the browser console to enable debug logging
+- Use the browser developer tools to inspect network requests and responses
+- Check the console for detailed error messages
+
+### Payment Gateway Debugging
+
+- Check the Next.js server logs for API errors
+- Verify Supabase connection and queries
+- Use the `/api/debug` endpoint (in development) to check system status
+
+### Workers Debugging
+
+- Check Redis connection status
+- Verify job queues are being populated
+- Examine worker logs for processing errors
+- Use BullMQ's API to inspect job status
+
+## Contributing Guidelines
+
+1. **Branch Management**:
+   - `main`: Production-ready code
+   - `develop`: Integration branch for features
+   - `feature/[name]`: Individual features
+
+2. **Pull Request Process**:
+   - Create feature branches from `develop`
+   - Submit PRs back to `develop`
+   - Ensure tests pass
+   - Follow code style guidelines
+
+3. **Versioning**:
+   - Follow semantic versioning (MAJOR.MINOR.PATCH)
+   - Document breaking changes in CHANGELOG.md
+
+## Resources
+
+- [Solana Documentation](https://docs.solana.com/)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.io/docs)
+- [BullMQ Documentation](https://docs.bullmq.io/)
+- [React Documentation](https://reactjs.org/docs)
