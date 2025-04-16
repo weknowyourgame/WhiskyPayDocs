@@ -1,0 +1,261 @@
+---
+title: 'Solana Quickstart Guide'
+description: 'Get started with Solana payments in minutes'
+---
+
+# Solana Quickstart
+
+This guide will help you quickly integrate Solana-based cryptocurrency payments into your application using WhiskyPay.
+
+## Prerequisites
+
+- A React application
+- Node.js 16+ installed
+- npm or yarn package manager
+- WhiskyPay merchant account (register at [pay.whiskypeak.com](https://pay.whiskypeak.com))
+
+## Step 1: Installation
+
+Install the WhiskyPay SDK package:
+
+```bash
+npm install @whisky-peak/whisky-pay-sdk
+# or
+yarn add @whisky-peak/whisky-pay-sdk
+```
+
+## Step 2: Basic Integration
+
+Add the WhiskyPay payment flow to your React application:
+
+```jsx
+import React, { useState } from 'react';
+import { createSession, PaymentModal } from '@whisky-peak/whisky-pay-sdk';
+
+function CheckoutPage() {
+  const [sessionId, setSessionId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  
+  const handleCheckout = async () => {
+    setLoading(true);
+    
+    try {
+      // Replace with your actual merchant ID from the dashboard
+      const merchantId = 'your-saas-id';
+      
+      // Create a payment session
+      const session = await createSession(
+        merchantId,
+        'customer@example.com', // Customer's email
+        'premium-plan'          // Plan identifier
+      );
+      
+      if (session) {
+        setSessionId(session);
+      } else {
+        alert('Failed to create payment session');
+      }
+    } catch (error) {
+      console.error('Error creating session:', error);
+      alert('An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // When payment is complete, redirect to a thank you page
+  const handlePaymentComplete = () => {
+    window.location.href = '/thank-you';
+  };
+  
+  return (
+    <div>
+      {!sessionId ? (
+        <button 
+          onClick={handleCheckout} 
+          disabled={loading}
+        >
+          {loading ? 'Creating session...' : 'Pay with Crypto'}
+        </button>
+      ) : (
+        <PaymentModal
+          sessionId={sessionId}
+          RPC_URL="https://api.mainnet-beta.solana.com"
+          onRedirect={handlePaymentComplete}
+        />
+      )}
+    </div>
+  );
+}
+
+export default CheckoutPage;
+```
+
+## Step 3: Configure Your Merchant Account
+
+Before testing, make sure you've:
+
+1. Registered at [pay.whiskypeak.com](https://pay.whiskypeak.com)
+2. Connected your Solana wallet (where payments will be received)
+3. Set up your merchant profile (name, logo, callback URL)
+4. Obtained your `saasId` from the dashboard
+
+## Step 4: Customize The Payment Modal
+
+The PaymentModal component accepts the following props:
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `sessionId` | string | Session ID from createSession (required) |
+| `RPC_URL` | string | Solana RPC URL (required) |
+| `onRedirect` | function | Callback when payment completes |
+| `theme` | object | Custom styling options |
+| `desiredToken` | string | Preferred token (USDC, SOL, etc.) |
+| `showCloseButton` | boolean | Allow users to close the modal |
+| `onClose` | function | Callback when modal is closed |
+
+Example with custom styling:
+
+```jsx
+<PaymentModal
+  sessionId={sessionId}
+  RPC_URL="https://api.mainnet-beta.solana.com"
+  onRedirect={handlePaymentComplete}
+  theme={{
+    colorPrimary: '#8A2BE2',
+    colorBackground: '#F5F5F5',
+    colorText: '#333333',
+    borderRadius: '8px'
+  }}
+  desiredToken="USDC"
+  showCloseButton={true}
+  onClose={() => setSessionId(null)}
+/>
+```
+
+## Step 5: Handle Payment Notifications
+
+When a payment is completed, WhiskyPay will:
+
+1. Call your webhook URL (specified in your merchant dashboard)
+2. Send email confirmations to both you and your customer
+3. Redirect the customer to your specified redirect URL
+
+Create a webhook endpoint to receive payment notifications:
+
+```javascript
+// Example webhook handler (Next.js API route)
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).end();
+  }
+  
+  const { email, plan, price, status, timestamp, signature } = req.body;
+  
+  // Validate the webhook signature (important for security)
+  if (!validateSignature(signature, process.env.WEBHOOK_SECRET)) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+  
+  // Update your database to mark the subscription as active
+  if (status === 'completed') {
+    await activateUserSubscription(email, plan);
+  }
+  
+  // Return a 200 status to acknowledge receipt
+  res.status(200).json({ success: true });
+}
+```
+
+## Step 6: Testing
+
+To test your integration:
+
+1. Use a real Solana wallet with testnet or devnet SOL
+2. Set `RPC_URL` to a testnet or devnet endpoint during testing:
+   ```
+   https://api.devnet.solana.com
+   ```
+3. Make a test payment to verify the entire flow
+4. Check that your webhook receives the payment notification
+
+## Step 7: Going to Production
+
+Before going live:
+
+1. Update your RPC_URL to use a production endpoint:
+   ```
+   https://api.mainnet-beta.solana.com
+   ```
+   Or even better, use a paid RPC provider for reliability
+2. Update your webhook endpoint to handle production payments
+3. Set up monitoring for your webhook endpoint
+4. Test the entire flow in a staging environment
+
+## Implementation with Next.js
+
+For Next.js applications, here's a complete example:
+
+```jsx
+// pages/checkout.js
+import { useState } from 'react';
+import { createSession, PaymentModal } from '@whisky-peak/whisky-pay-sdk';
+import { useRouter } from 'next/router';
+
+export default function Checkout() {
+  const [sessionId, setSessionId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  
+  const handleCheckout = async () => {
+    setLoading(true);
+    
+    try {
+      const session = await createSession(
+        process.env.NEXT_PUBLIC_MERCHANT_ID,
+        'customer@example.com',
+        'premium-plan'
+      );
+      
+      if (session) {
+        setSessionId(session);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <div className="container mx-auto max-w-md py-12">
+      <h1 className="text-2xl font-bold mb-6">Checkout</h1>
+      
+      {!sessionId ? (
+        <button
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          onClick={handleCheckout}
+          disabled={loading}
+        >
+          {loading ? 'Creating payment...' : 'Pay with Crypto'}
+        </button>
+      ) : (
+        <PaymentModal
+          sessionId={sessionId}
+          RPC_URL="https://api.mainnet-beta.solana.com"
+          onRedirect={() => router.push('/success')}
+          showCloseButton={true}
+          onClose={() => setSessionId(null)}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+## Next Steps
+
+- [Explore the Solana integration guide](/solana/integration)
+- [Learn about payment verification](/solana/api-reference#verify-payment)
+- [Set up custom webhook handling](/solana/integration#webhooks)
+- [Implement subscription management](/solana/integration#subscriptions) 

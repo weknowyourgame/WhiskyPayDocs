@@ -1,0 +1,542 @@
+---
+title: 'Solana API Reference'
+description: 'Complete API reference for Solana payment integration'
+---
+
+# Solana API Reference
+
+This document provides a comprehensive reference for WhiskyPay's Solana payment integration.
+
+## SDK Components
+
+### createSession
+
+Creates a new payment session.
+
+```typescript
+async function createSession(
+  saasId: string,
+  email: string,
+  plan: string
+): Promise<string>
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `saasId` | string | Your merchant ID from the dashboard |
+| `email` | string | Customer's email address |
+| `plan` | string | Plan identifier for the purchase |
+
+#### Returns
+
+A session ID string that you'll use with the PaymentModal.
+
+#### Example
+
+```javascript
+import { createSession } from '@whisky-peak/whisky-pay-sdk';
+
+const handleCheckout = async () => {
+  try {
+    const sessionId = await createSession(
+      'your-saas-id',
+      'customer@example.com',
+      'premium-plan'
+    );
+    
+    // Use sessionId with PaymentModal
+    setSessionId(sessionId);
+  } catch (error) {
+    console.error('Failed to create session:', error);
+  }
+};
+```
+
+### PaymentModal
+
+React component for displaying the payment UI.
+
+```typescript
+<PaymentModal
+  sessionId: string;
+  RPC_URL: string;
+  onRedirect?: () => void;
+  theme?: ThemeOptions;
+  desiredToken?: string;
+  showCloseButton?: boolean;
+  onClose?: () => void;
+/>
+```
+
+#### Props
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `sessionId` | string | Yes | - | Session ID from createSession |
+| `RPC_URL` | string | Yes | - | Solana RPC URL |
+| `onRedirect` | function | No | undefined | Callback when payment completes |
+| `theme` | object | No | undefined | Custom styling options |
+| `desiredToken` | string | No | undefined | Preferred token (USDC, SOL, etc.) |
+| `showCloseButton` | boolean | No | false | Allow users to close the modal |
+| `onClose` | function | No | undefined | Callback when modal is closed |
+
+#### ThemeOptions
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `colorPrimary` | string | Primary color for buttons and accents |
+| `colorBackground` | string | Background color |
+| `colorText` | string | Text color |
+| `borderRadius` | string | Border radius for buttons and panels |
+| `fontFamily` | string | Font family |
+
+#### Example
+
+```jsx
+import { PaymentModal } from '@whisky-peak/whisky-pay-sdk';
+
+function Checkout({ sessionId }) {
+  return (
+    <PaymentModal
+      sessionId={sessionId}
+      RPC_URL="https://api.mainnet-beta.solana.com"
+      onRedirect={() => window.location.href = '/success'}
+      theme={{
+        colorPrimary: '#8A2BE2',
+        colorBackground: '#F5F5F5',
+        colorText: '#333333',
+        borderRadius: '8px'
+      }}
+      desiredToken="USDC"
+      showCloseButton={true}
+      onClose={() => console.log('Modal closed')}
+    />
+  );
+}
+```
+
+### getSessionDetails
+
+Retrieves details about a payment session.
+
+```typescript
+async function getSessionDetails(
+  sessionId: string
+): Promise<SessionDetails>
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Session ID to retrieve |
+
+#### Returns: SessionDetails
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | string | Session ID |
+| `status` | string | Session status (pending, completed, expired) |
+| `email` | string | Customer email |
+| `planId` | string | Plan identifier |
+| `amount` | number | Payment amount |
+| `currency` | string | Currency code |
+| `createdAt` | string | Creation timestamp |
+| `expiresAt` | string | Expiration timestamp |
+
+#### Example
+
+```javascript
+import { getSessionDetails } from '@whisky-peak/whisky-pay-sdk';
+
+async function checkSession(sessionId) {
+  try {
+    const details = await getSessionDetails(sessionId);
+    console.log(`Session status: ${details.status}`);
+    return details;
+  } catch (error) {
+    console.error('Failed to get session details:', error);
+  }
+}
+```
+
+### checkPaymentStatus
+
+Checks the status of a payment.
+
+```typescript
+async function checkPaymentStatus(
+  sessionId: string
+): Promise<PaymentStatusResponse>
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Session ID to check |
+
+#### Returns: PaymentStatusResponse
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `status` | PaymentStatus | Payment status enum |
+| `message` | string | Status message |
+| `signature` | string | Transaction signature (if completed) |
+
+#### PaymentStatus Enum
+
+```typescript
+enum PaymentStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  EXPIRED = 'expired'
+}
+```
+
+#### Example
+
+```javascript
+import { checkPaymentStatus, PaymentStatus } from '@whisky-peak/whisky-pay-sdk';
+
+async function pollPaymentStatus(sessionId) {
+  const intervalId = setInterval(async () => {
+    try {
+      const status = await checkPaymentStatus(sessionId);
+      
+      if (status.status === PaymentStatus.COMPLETED) {
+        clearInterval(intervalId);
+        console.log('Payment completed!', status.signature);
+        // Handle successful payment
+      } else if (status.status === PaymentStatus.FAILED) {
+        clearInterval(intervalId);
+        console.error('Payment failed:', status.message);
+        // Handle failed payment
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+    }
+  }, 3000);
+  
+  // Clear interval after 10 minutes to prevent infinite polling
+  setTimeout(() => clearInterval(intervalId), 10 * 60 * 1000);
+}
+```
+
+### verifyPayment
+
+Verifies a payment on-chain.
+
+```typescript
+async function verifyPayment(
+  sessionId: string,
+  signature: string,
+  RPC_URL: string
+): Promise<VerificationResult>
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Session ID to verify |
+| `signature` | string | Transaction signature |
+| `RPC_URL` | string | Solana RPC URL |
+
+#### Returns: VerificationResult
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `verified` | boolean | Whether payment is verified |
+| `details` | object | Transaction details |
+
+#### Example
+
+```javascript
+import { verifyPayment } from '@whisky-peak/whisky-pay-sdk';
+
+async function confirmPayment(sessionId, signature) {
+  try {
+    const result = await verifyPayment(
+      sessionId,
+      signature,
+      'https://api.mainnet-beta.solana.com'
+    );
+    
+    if (result.verified) {
+      console.log('Payment verified on-chain');
+      return true;
+    } else {
+      console.error('Payment verification failed');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error verifying payment:', error);
+    return false;
+  }
+}
+```
+
+## REST API Endpoints
+
+These endpoints are available for server-side operations.
+
+### POST /api/v1/sessions
+
+Creates a new payment session.
+
+#### Request Body
+
+```json
+{
+  "saasId": "your-saas-id",
+  "email": "customer@example.com",
+  "plan": "premium-plan"
+}
+```
+
+#### Headers
+
+| Header | Value | Description |
+|--------|-------|-------------|
+| `Content-Type` | `application/json` | JSON content type |
+| `Authorization` | `Bearer YOUR_API_KEY` | API key authentication |
+
+#### Response
+
+```json
+{
+  "sessionId": "sess_a1b2c3d4e5f6",
+  "expiresAt": "2023-08-25T15:30:00Z"
+}
+```
+
+### GET /api/v1/sessions/:sessionId
+
+Retrieves details about a payment session.
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Session ID to retrieve |
+
+#### Headers
+
+| Header | Value | Description |
+|--------|-------|-------------|
+| `Authorization` | `Bearer YOUR_API_KEY` | API key authentication |
+
+#### Response
+
+```json
+{
+  "id": "sess_a1b2c3d4e5f6",
+  "status": "pending",
+  "email": "customer@example.com",
+  "planId": "premium-plan",
+  "amount": 10.00,
+  "currency": "USDC",
+  "createdAt": "2023-08-25T14:30:00Z",
+  "expiresAt": "2023-08-25T15:30:00Z"
+}
+```
+
+### GET /api/v1/payments/:sessionId/status
+
+Checks the status of a payment.
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Session ID to check |
+
+#### Headers
+
+| Header | Value | Description |
+|--------|-------|-------------|
+| `Authorization` | `Bearer YOUR_API_KEY` | API key authentication |
+
+#### Response
+
+```json
+{
+  "status": "completed",
+  "message": "Payment successful",
+  "signature": "5Pz9yoyAYKuCsF7jAZJAZm9Rp5pXo43C6CK4qYJrA2UXP5qPxAvUmT7jHGYRc6H13zV3",
+  "timestamp": "2023-08-25T14:45:23Z"
+}
+```
+
+### POST /api/v1/payments/verify
+
+Verifies a payment on-chain.
+
+#### Request Body
+
+```json
+{
+  "sessionId": "sess_a1b2c3d4e5f6",
+  "signature": "5Pz9yoyAYKuCsF7jAZJAZm9Rp5pXo43C6CK4qYJrA2UXP5qPxAvUmT7jHGYRc6H13zV3"
+}
+```
+
+#### Headers
+
+| Header | Value | Description |
+|--------|-------|-------------|
+| `Content-Type` | `application/json` | JSON content type |
+| `Authorization` | `Bearer YOUR_API_KEY` | API key authentication |
+
+#### Response
+
+```json
+{
+  "verified": true,
+  "details": {
+    "amount": 10.00,
+    "token": "USDC",
+    "sender": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+    "recipient": "G17UmNGnMJ851x3Z1BzLFDNp2LjkTLM6A6wTGyY8xY4i",
+    "blockTime": 1692969923,
+    "slot": 182463921
+  }
+}
+```
+
+## Webhook Events
+
+WhiskyPay sends webhook notifications for payment status changes.
+
+### Payment Completed
+
+```json
+{
+  "event": "payment.completed",
+  "sessionId": "sess_a1b2c3d4e5f6",
+  "email": "customer@example.com",
+  "plan": "premium-plan",
+  "amount": 10.00,
+  "currency": "USDC",
+  "signature": "5Pz9yoyAYKuCsF7jAZJAZm9Rp5pXo43C6CK4qYJrA2UXP5qPxAvUmT7jHGYRc6H13zV3",
+  "timestamp": "2023-08-25T14:45:23Z",
+  "webhookSignature": "sha256=..."
+}
+```
+
+### Payment Failed
+
+```json
+{
+  "event": "payment.failed",
+  "sessionId": "sess_a1b2c3d4e5f6",
+  "email": "customer@example.com",
+  "plan": "premium-plan",
+  "reason": "Transaction rejected",
+  "timestamp": "2023-08-25T14:40:12Z",
+  "webhookSignature": "sha256=..."
+}
+```
+
+### Signature Verification
+
+Verify webhook signatures to ensure authenticity:
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhookSignature(payload, signature, secret) {
+  const hmac = crypto.createHmac('sha256', secret);
+  const digest = hmac.update(JSON.stringify(payload)).digest('hex');
+  
+  return `sha256=${digest}` === signature;
+}
+```
+
+## Error Handling
+
+WhiskyPay API uses standard HTTP status codes and error responses.
+
+### Error Response Format
+
+```json
+{
+  "error": {
+    "code": "invalid_session",
+    "message": "Session not found or expired",
+    "status": 404
+  }
+}
+```
+
+### Common Error Codes
+
+| Code | Status | Description |
+|------|--------|-------------|
+| `invalid_session` | 404 | Session not found or expired |
+| `invalid_parameters` | 400 | Invalid request parameters |
+| `authentication_error` | 401 | Invalid API key |
+| `rate_limit_exceeded` | 429 | Too many requests |
+| `internal_error` | 500 | Server-side error |
+
+## Token Support
+
+WhiskyPay supports the following Solana tokens:
+
+| Symbol | Name | Decimals | Token Type |
+|--------|------|----------|------------|
+| `SOL` | Solana | 9 | Native |
+| `USDC` | USD Coin | 6 | SPL |
+| `USDT` | Tether | 6 | SPL |
+| `BONK` | Bonk | 5 | SPL |
+| `JUP` | Jupiter | 6 | SPL |
+| `RAY` | Raydium | 6 | SPL |
+
+## Best Practices
+
+### Security
+
+1. **Use HTTPS**: Always use secure connections
+2. **Validate Signatures**: Verify webhook signatures
+3. **Store API Keys Securely**: Use environment variables
+4. **Verify Transactions**: Always verify payments on-chain
+
+### Performance
+
+1. **Connection Pooling**: Reuse HTTP connections
+2. **Caching**: Cache token prices and session data
+3. **Background Processing**: Handle webhooks asynchronously
+
+### Error Handling
+
+1. **Retry Logic**: Implement exponential backoff for failed API calls
+2. **Monitoring**: Set up alerts for failed payments
+3. **Logging**: Log all API interactions for debugging
+
+## Rate Limits
+
+The WhiskyPay API has the following rate limits:
+
+- **Session Creation**: 60 requests per minute
+- **Session Status**: 120 requests per minute
+- **Payment Verification**: 60 requests per minute
+
+## Support and Troubleshooting
+
+For issues with the API, contact support at support@whiskypeak.com with:
+
+1. Your merchant ID
+2. The session ID(s) in question
+3. Error messages received
+4. Steps to reproduce the issue
+
+Common solutions to frequent problems:
+
+- **"Invalid API Key"**: Verify your API key in dashboard settings
+- **"Session Not Found"**: Check if the session has expired
+- **"Payment Failed"**: Verify the user has sufficient balance 

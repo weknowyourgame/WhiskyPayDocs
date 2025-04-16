@@ -1,0 +1,352 @@
+---
+title: 'Monero API Reference'
+description: 'Complete API reference for Monero payment integration'
+---
+
+# Monero API Reference
+
+This document provides a comprehensive reference for the Monero payment integration in WhiskyPay.
+
+## MoneroPaymentComponent
+
+React component for accepting Monero payments.
+
+### Props
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `gatewayUrl` | string | Yes | - | URL of the Monero payment gateway |
+| `apiKey` | string | No | undefined | API key for authentication |
+| `amount` | number | Yes | - | Payment amount in XMR |
+| `description` | string | No | undefined | Payment description |
+| `refund` | string | No | undefined | Refund address |
+| `onPaymentComplete` | function | No | undefined | Callback when payment succeeds |
+| `onPaymentError` | function | No | undefined | Callback when payment fails |
+| `onPaymentStarted` | function | No | undefined | Callback when payment begins |
+| `checkInterval` | number | No | 10000 | Interval to check payment status (ms) |
+| `darkMode` | boolean | No | false | Enable dark mode styling |
+
+### Usage Example
+
+```jsx
+import { MoneroPaymentComponent } from 'monero-payment-sdk';
+
+function PaymentPage() {
+  return (
+    <MoneroPaymentComponent
+      gatewayUrl="https://your-gateway-url.com"
+      amount={0.01}
+      description="Premium Plan"
+      onPaymentComplete={(id) => console.log(`Payment complete: ${id}`)}
+      darkMode={true}
+    />
+  );
+}
+```
+
+## MoneroPayment Class
+
+Core class for programmatic Monero payment handling.
+
+### Constructor
+
+```typescript
+new MoneroPayment(config: MoneroPaymentConfig)
+```
+
+#### MoneroPaymentConfig
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `gatewayUrl` | string | Yes | URL of the payment gateway |
+| `apiKey` | string | No | Optional API key for authentication |
+
+### Methods
+
+#### createInvoice
+
+Creates a new Monero invoice.
+
+```typescript
+async createInvoice(options: CreateInvoiceOptions): Promise<{ id: string; address: string }>
+```
+
+##### CreateInvoiceOptions
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `amount` | number | Yes | Amount in XMR |
+| `description` | string | No | Invoice description |
+| `refund` | string | No | Refund address |
+
+##### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | string | Invoice ID |
+| `address` | string | Payment address |
+
+#### checkInvoice
+
+Checks the status of an invoice.
+
+```typescript
+async checkInvoice(id: string): Promise<InvoiceInfo>
+```
+
+##### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | Invoice ID to check |
+
+##### Returns: InvoiceInfo
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `status` | string | 'Pending', 'Confirming', 'Received', or 'Expired' |
+| `amount` | string | Invoice amount in XMR |
+| `address` | string | Payment address |
+| `refund` | string | Refund address (if provided) |
+| `expiry` | string | Expiry timestamp |
+| `description` | string | Invoice description (if provided) |
+
+#### isPaymentComplete
+
+Checks if a payment has been completed.
+
+```typescript
+async isPaymentComplete(id: string): Promise<boolean>
+```
+
+##### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | Invoice ID to check |
+
+##### Returns
+
+Boolean indicating if payment is complete.
+
+#### waitForPayment
+
+Waits for a payment to complete with a timeout.
+
+```typescript
+async waitForPayment(
+  id: string,
+  timeoutMs = 30 * 60 * 1000,
+  checkIntervalMs = 10 * 1000
+): Promise<void>
+```
+
+##### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `id` | string | - | Invoice ID to check |
+| `timeoutMs` | number | 30 minutes | Timeout in milliseconds |
+| `checkIntervalMs` | number | 10 seconds | Check interval in milliseconds |
+
+## Gateway API Endpoints
+
+These endpoints are exposed by the Monero payment gateway.
+
+### POST /api/monero/new
+
+Creates a new Monero invoice.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `amount` | number | Yes | Amount in XMR |
+| `description` | string | No | Invoice description |
+| `refund` | string | No | Refund address |
+
+#### Response
+
+```json
+{
+  "id": "abcd1234efgh5678",
+  "address": "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A"
+}
+```
+
+### GET /api/monero/info
+
+Gets information about an existing invoice.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Invoice ID |
+
+#### Response
+
+```json
+{
+  "status": "Pending",
+  "amount": "0.01",
+  "address": "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A",
+  "refund": "48daf1rfjAdDnFLLiBFyoUJAJt9Bhs6QJFjwsYi5AQ76AcQtGPcZXpJQ2EnRcM5ppU4UF6u6FLxBn2FxnuR3FzAEMVGbVKP",
+  "expiry": "2023-09-01T12:00:00Z",
+  "description": "Premium Plan Subscription"
+}
+```
+
+## Webhook Events
+
+When a payment status changes, a webhook notification is sent to your configured endpoint.
+
+### Webhook Payload
+
+```json
+{
+  "id": "abcd1234efgh5678",
+  "status": "Received",
+  "amount": "0.01", 
+  "timestamp": "2023-08-25T14:32:17Z",
+  "signature": "c8f54b35d2a9e9123..."
+}
+```
+
+### Signature Verification
+
+Always verify webhook signatures to prevent fraud:
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhookSignature(payload, signature, secret) {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(`${payload.id}:${payload.status}:${payload.timestamp}`)
+    .digest('hex');
+  
+  return signature === expectedSignature;
+}
+```
+
+## Error Handling
+
+The Monero SDK and API will return standard error responses with appropriate HTTP status codes and error messages. Common errors include:
+
+- `400 Bad Request`: Invalid parameters
+- `401 Unauthorized`: Missing or invalid API key
+- `404 Not Found`: Invoice not found
+- `500 Internal Server Error`: Server-side error
+
+Example error response:
+
+```json
+{
+  "error": "Invalid invoice ID",
+  "code": "INVALID_ID"
+}
+```
+
+## Security Best Practices
+
+### API Key Protection
+
+Store your API key securely:
+
+```javascript
+// Use environment variables
+const apiKey = process.env.MONERO_API_KEY;
+
+// Configure your MoneroPayment client
+const moneroClient = new MoneroPayment({
+  gatewayUrl: process.env.GATEWAY_URL,
+  apiKey
+});
+```
+
+### Address Validation
+
+Always validate Monero addresses:
+
+```javascript
+function isValidMoneroAddress(address) {
+  // Standard Monero address (95 characters)
+  const standardRegex = /^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$/;
+  
+  // Integrated address (106 characters)
+  const integratedRegex = /^8[0-9AB][1-9A-HJ-NP-Za-km-z]{104}$/;
+  
+  // Subaddress (95 characters)
+  const subaddressRegex = /^8[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$/;
+  
+  return (
+    standardRegex.test(address) ||
+    integratedRegex.test(address) ||
+    subaddressRegex.test(address)
+  );
+}
+```
+
+## Testing
+
+### Testing Payments
+
+For testing, you can:
+
+1. Use the Monero testnet instead of mainnet
+2. Set up a development gateway with lower confirmation requirements
+3. Use small amounts (0.001 XMR) for testing
+
+### Mocking Payments
+
+For development, you can mock payment responses:
+
+```javascript
+// Mock MoneroPayment client for testing
+class MockMoneroPayment {
+  async createInvoice(options) {
+    return {
+      id: 'test-invoice-id',
+      address: '44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A'
+    };
+  }
+  
+  async checkInvoice(id) {
+    return {
+      status: 'Pending',
+      amount: '0.01',
+      address: '44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A',
+      expiry: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+    };
+  }
+  
+  async isPaymentComplete(id) {
+    return false;
+  }
+}
+```
+
+## Rate Limits
+
+The Monero payment API has the following rate limits:
+
+- **Create Invoice**: 10 requests per minute
+- **Check Invoice**: 60 requests per minute
+- **Webhook Delivery**: Maximum 3 retry attempts
+
+## Support and Troubleshooting
+
+For issues with the Monero integration, contact support at support@whiskypeak.com with:
+
+1. Your merchant ID
+2. The invoice ID(s) in question
+3. Error messages received
+4. Steps to reproduce the issue
+
+Common solutions to frequent problems:
+
+- **"Invalid API Key"**: Verify your API key in dashboard settings
+- **"Invoice Not Found"**: Check the invoice ID format (16 characters)
+- **"Gateway Unreachable"**: Ensure your server can reach the gateway URL
+- **"Payment Not Detected"**: The Monero network may be experiencing delays

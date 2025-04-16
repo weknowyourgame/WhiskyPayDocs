@@ -1,0 +1,70 @@
+---
+title: 'Monero Integration'
+description: 'Accept Monero (XMR) payments with WhiskyPay'
+---
+
+# Monero Integration
+
+WhiskyPay now supports Monero (XMR) payments, allowing merchants to accept payments through one of the most privacy-focused cryptocurrencies available. This integration expands WhiskyPay's payment options beyond Solana tokens, providing more flexibility for both merchants and customers.
+
+## Why Monero?
+
+Monero offers several unique advantages:
+
+- **Enhanced Privacy**: Monero transactions are completely private by default
+- **Fungibility**: All XMR tokens are interchangeable, with no history tracking
+- **Decentralization**: Resistant to specialized mining hardware, maintaining network decentralization
+- **Global Appeal**: Popular with users who prioritize financial privacy
+
+## Integration Overview
+
+The Monero integration consists of:
+
+- **Monero Payment SDK**: A React component for accepting XMR payments
+- **Backend Gateway**: Handles XMR payment verification and confirmations
+- **Unified API**: Consistent with WhiskyPay's existing API patterns
+
+## Key Features
+
+- **Simple Integration**: Easy-to-use React components
+- **Real-time Payment Tracking**: Automatic status updates
+- **Customizable UI**: Dark and light mode support
+- **Robust Error Handling**: Comprehensive error states and retry mechanisms
+- **Address Verification**: Built-in validation for XMR addresses
+
+## Getting Started
+
+To start accepting Monero payments:
+
+1. Install the Monero Payment SDK
+2. Configure your payment gateway
+3. Add the Monero payment component to your application
+
+See the [Monero Quickstart](/monero/quickstart) guide for detailed implementation instructions.
+
+## Requirements
+
+- Node.js 16+
+- React 16.8+ (for hooks support)
+- Access to a Monero gateway endpoint
+
+## Example Implementation
+
+Here's a simple example of implementing the Monero Payment component:
+
+```jsx
+import { MoneroPaymentComponent } from 'monero-payment-sdk';
+
+function CheckoutPage() {
+  return (
+    <MoneroPaymentComponent
+      gatewayUrl="https://your-gateway-url.com"
+      amount={0.01}
+      description="Premium Subscription"
+      onPaymentComplete={(id) => console.log(`Payment complete: ${id}`)}
+    />
+  );
+}
+```
+
+For more detailed examples and options, see the [Integration Guide](/monero/integration). 

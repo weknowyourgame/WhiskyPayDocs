@@ -1,11 +1,11 @@
 ---
 title: 'Welcome to WhiskyPay'
-description: 'A comprehensive Solana-based payment solution for SaaS businesses'
+description: 'A comprehensive cryptocurrency payment solution for SaaS businesses'
 ---
 
 # Welcome to WhiskyPay
 
-WhiskyPay is a complete payment solution built on the Solana blockchain, designed specifically for SaaS businesses looking to accept cryptocurrency payments. Our platform provides a seamless integration experience with robust tools to handle the entire payment lifecycle.
+WhiskyPay is a complete payment solution built for cryptocurrency payments, designed specifically for SaaS businesses looking to accept digital currencies. Our platform provides a seamless integration experience with robust tools to handle the entire payment lifecycle across multiple blockchains.
 
 ## Key Components
 
@@ -13,7 +13,7 @@ WhiskyPay consists of three main components:
 
 ### 1. SDK
 
-Our React SDK allows developers to easily integrate WhiskyPay into their applications. It provides components and functions for creating payment sessions, displaying payment modals, and verifying transactions.
+Our React SDK allows developers to easily integrate WhiskyPay into their applications. It provides components and functions for creating payment sessions, displaying payment modals, and verifying transactions for both Solana and Monero payments.
 
 ### 2. Payment Gateway
 
@@ -23,10 +23,27 @@ The payment gateway handles all the backend logic for payment processing, includ
 
 Background workers handle asynchronous tasks such as sending webhook notifications to merchants and delivering email confirmations to buyers and merchants after successful payments.
 
+## Supported Cryptocurrencies
+
+WhiskyPay supports multiple cryptocurrency payment options:
+
+### Solana Ecosystem
+
+- **SOL**: Native Solana token
+- **USDC**: USD Stablecoin on Solana
+- **BONK**: Solana meme token
+- **JUP**: Jupiter token
+- **And more**: Support for most major SPL tokens
+
+### Privacy Coins
+
+- **XMR**: Monero, a leading privacy-focused cryptocurrency
+
 ## Key Features
 
-- **Multiple Token Support**: Accept payments in SOL, USDC, JUP, BONK, USDT and more
+- **Multi-Chain Support**: Accept payments in Solana tokens and Monero
 - **Token Swaps**: Integrated with Jupiter to allow customers to pay with any Solana token
+- **Privacy Options**: Support for privacy-focused payments with Monero
 - **Customizable UI**: Beautiful and customizable payment modal that integrates with any application
 - **Webhook Notifications**: Receive real-time updates when payments are completed
 - **Email Notifications**: Automatic email confirmations for both merchants and customers
@@ -38,5 +55,7 @@ Background workers handle asynchronous tasks such as sending webhook notificatio
 To get started with WhiskyPay, check out our [Quickstart Guide](/quickstart) or explore the specific documentation for each component:
 
 - [SDK Documentation](/sdk/introduction)
+- [Solana Payments](/solana/introduction)
+- [Monero Payments](/monero/introduction)
 - [Payment Gateway Documentation](/payment-gateway/introduction)
 - [Workers Documentation](/workers/introduction)

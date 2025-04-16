@@ -1,0 +1,193 @@
+---
+title: 'Monero Quickstart Guide'
+description: 'Get started with Monero payments in minutes'
+---
+
+# Monero Quickstart
+
+This guide will help you quickly integrate Monero (XMR) payments into your application using WhiskyPay.
+
+## Prerequisites
+
+- A React application
+- Node.js 16+ installed
+- npm or yarn package manager
+- Access to a Monero gateway endpoint
+
+## Step 1: Installation
+
+Install the Monero Payment SDK package:
+
+```bash
+npm install monero-payment-sdk
+# or
+yarn add monero-payment-sdk
+```
+
+## Step 2: Basic Integration
+
+Add the Monero payment component to your React application:
+
+```jsx
+import React, { useState } from 'react';
+import { MoneroPaymentComponent } from 'monero-payment-sdk';
+
+function CheckoutPage() {
+  const [amount, setAmount] = useState(0.01);
+  
+  const handlePaymentComplete = (id) => {
+    console.log(`Payment completed with ID: ${id}`);
+    // Redirect or show success message
+  };
+  
+  const handlePaymentError = (error) => {
+    console.error('Payment error:', error);
+    // Show error message
+  };
+  
+  return (
+    <div>
+      <h1>Checkout</h1>
+      
+      <div className="form-group">
+        <label>Amount (XMR)</label>
+        <input
+          type="number"
+          step="0.001"
+          min="0.001"
+          value={amount}
+          onChange={(e) => setAmount(parseFloat(e.target.value))}
+        />
+      </div>
+      
+      <MoneroPaymentComponent
+        gatewayUrl="https://your-gateway-url.com" // Replace with your gateway
+        amount={amount}
+        description="Premium subscription"
+        onPaymentComplete={handlePaymentComplete}
+        onPaymentError={handlePaymentError}
+        darkMode={false}
+      />
+    </div>
+  );
+}
+
+export default CheckoutPage;
+```
+
+## Step 3: Configure Gateway URL
+
+The `gatewayUrl` parameter should point to your Monero payment gateway endpoint. This is typically:
+
+- **Development**: `http://localhost:3000` or your local development server
+- **Production**: Your deployed WhiskyPay gateway URL
+
+## Step 4: Customization Options
+
+The MoneroPaymentComponent accepts the following props:
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `gatewayUrl` | string | URL of the Monero payment gateway (required) |
+| `apiKey` | string | Optional API key for authentication |
+| `amount` | number | Payment amount in XMR (required) |
+| `description` | string | Payment description |
+| `refund` | string | Optional refund address |
+| `onPaymentComplete` | function | Callback when payment succeeds |
+| `onPaymentError` | function | Callback when payment fails |
+| `onPaymentStarted` | function | Callback when payment begins |
+| `checkInterval` | number | Interval to check payment status (ms) |
+| `darkMode` | boolean | Enable dark mode styling |
+
+## Step 5: Handle Payment Events
+
+Implement the callback functions to handle payment events:
+
+```jsx
+// Called when payment is successfully completed
+const handlePaymentComplete = (id) => {
+  // id: The payment ID
+  console.log(`Payment completed: ${id}`);
+  
+  // Update your database or UI
+  setPaymentStatus('completed');
+  
+  // Redirect to thank you page
+  router.push('/thank-you');
+};
+
+// Called when payment starts
+const handlePaymentStarted = (id, address) => {
+  // id: The payment ID
+  // address: The XMR payment address
+  console.log(`Payment started: ${id}, Address: ${address}`);
+  
+  // You can save these values for reference
+  setCurrentPaymentId(id);
+};
+
+// Called on payment errors
+const handlePaymentError = (error) => {
+  console.error('Payment error:', error);
+  setPaymentStatus('failed');
+  setError(error.message);
+};
+```
+
+## Step 6: Using the Programmatic API
+
+For more advanced integrations, you can use the `MoneroPayment` class directly:
+
+```javascript
+import { MoneroPayment } from 'monero-payment-sdk';
+
+// Initialize the client
+const moneroClient = new MoneroPayment({
+  gatewayUrl: 'https://your-gateway-url.com',
+  apiKey: 'your-optional-api-key'
+});
+
+// Create an invoice
+const createInvoice = async () => {
+  try {
+    const { id, address } = await moneroClient.createInvoice({
+      amount: 0.01,
+      description: 'Premium subscription',
+      refund: 'optional-refund-address'
+    });
+    
+    console.log(`Created invoice: ${id}, Pay to: ${address}`);
+    return { id, address };
+  } catch (error) {
+    console.error('Failed to create invoice:', error);
+  }
+};
+
+// Check payment status
+const checkPayment = async (id) => {
+  try {
+    const info = await moneroClient.checkInvoice(id);
+    console.log(`Payment status: ${info.status}`);
+    return info;
+  } catch (error) {
+    console.error('Failed to check invoice:', error);
+  }
+};
+
+// Wait for payment completion
+const waitForPayment = async (id) => {
+  try {
+    await moneroClient.waitForPayment(id);
+    console.log('Payment received!');
+  } catch (error) {
+    console.error('Payment failed or timed out:', error);
+  }
+};
+```
+
+## Next Steps
+
+- [Explore the complete API reference](/monero/api-reference)
+- [Learn about server-side integration](/monero/integration#server-side)
+- [Understand payment verification](/monero/api-reference#verify-payment)
+- [Implement with server-side payment processing](/monero/integration#server-integration) 

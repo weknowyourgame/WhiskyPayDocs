@@ -1,0 +1,92 @@
+---
+title: 'Solana Integration'
+description: 'Accept Solana-based token payments with WhiskyPay'
+---
+
+# Solana Integration
+
+WhiskyPay's core offering is built on the Solana blockchain, providing merchants with a fast, low-fee payment solution for accepting cryptocurrency payments. Solana's high throughput and low transaction costs make it an ideal blockchain for payment processing.
+
+## Why Solana?
+
+Solana offers several advantages for payment processing:
+
+- **High Performance**: Up to 65,000 TPS with sub-second finality
+- **Low Fees**: Transactions typically cost less than $0.01
+- **Rich Token Ecosystem**: Support for SOL, USDC, BONK, JUP, and many other tokens
+- **Growing Adoption**: Increasing user base and wallet support
+
+## Integration Overview
+
+The Solana integration consists of:
+
+- **WhiskyPay SDK**: React components for accepting Solana-based payments
+- **Payment Gateway**: Handles transaction verification and confirmations
+- **Token Swaps**: Jupiter integration for accepting payments in any Solana token
+
+## Key Features
+
+- **Multi-Token Support**: Accept payments in SOL, USDC, JUP, BONK, and more
+- **Wallet Integration**: Works with popular wallets like Phantom, Solflare, and Backpack
+- **Automatic Conversions**: Option to automatically convert payments to stablecoins
+- **Payment Verification**: On-chain verification of all transactions
+- **Session Management**: Stateful payment sessions with expiration handling
+
+## Getting Started
+
+To start accepting Solana payments:
+
+1. Register as a merchant on the WhiskyPay platform
+2. Install the WhiskyPay SDK
+3. Add the WhiskyPay payment components to your application
+
+See the [Solana Quickstart](/solana/quickstart) guide for detailed implementation instructions.
+
+## Requirements
+
+- Node.js 16+
+- React 16.8+ (for hooks support)
+- Solana-compatible wallet (for testing)
+
+## Example Implementation
+
+Here's a simple example of implementing the Solana payment flow:
+
+```jsx
+import { createSession, PaymentModal } from '@whisky-peak/whisky-pay-sdk';
+
+function CheckoutPage() {
+  const [sessionId, setSessionId] = useState(null);
+  
+  const handleCheckout = async () => {
+    const merchantId = 'your-saas-id';
+    const session = await createSession(
+      merchantId,
+      'customer@example.com',
+      'premium-plan'
+    );
+    
+    if (session) {
+      setSessionId(session);
+    }
+  };
+  
+  return (
+    <div>
+      {!sessionId ? (
+        <button onClick={handleCheckout}>
+          Pay with Crypto
+        </button>
+      ) : (
+        <PaymentModal
+          sessionId={sessionId}
+          RPC_URL="https://api.mainnet-beta.solana.com"
+          onRedirect={() => window.location.href = '/thank-you'}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+For more detailed examples and options, see the [Integration Guide](/solana/integration). 

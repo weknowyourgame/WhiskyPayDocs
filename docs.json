@@ -31,6 +31,24 @@
             ]
           },
           {
+            "group": "Solana Payments",
+            "pages": [
+              "solana/introduction",
+              "solana/quickstart",
+              "solana/integration",
+              "solana/api-reference"
+            ]
+          },
+          {
+            "group": "Monero Payments",
+            "pages": [
+              "monero/introduction",
+              "monero/quickstart",
+              "monero/integration",
+              "monero/api-reference"
+            ]
+          },
+          {
             "group": "Payment Gateway",
             "pages": [
               "payment-gateway/introduction",
